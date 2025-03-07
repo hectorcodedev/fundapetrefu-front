@@ -1,0 +1,35 @@
+.color__container {
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+}
+
+.color {
+  width: 20%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.midnight {
+  background-color: var(--color-midnight);
+  color: var(--color-bg);
+}
+
+.cyanProcess {
+  background-color: var(--color-cyan);
+}
+
+.beau {
+  background-color: var(--color-beau);
+}
+
+.turquoiseColor {
+  background-color: var(--color-turquoise);
+}
+
+.middlebg {
+  background-color: var(--color-middlebg);
+}

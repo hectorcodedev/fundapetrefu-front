@@ -1,0 +1,34 @@
+@import url('https://fonts.googleapis.com/css2?family=BioRhyme:wght@200;300;400;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alex+Brush&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Arizonia&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@100;300;400;500;600;700;800;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Play:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Alfa+Slab+One&display=swap');
+
+:root {
+  --font-family-BioRhyme: 'BioRhyme', serif;
+  --font-family-AlexBrush: 'Alex Brush', cursive;
+  --font-family-Arizonia: 'Arizonia', cursive;
+  --font-family-Monserrat: 'Montserrat', sans-serif;
+  --font-family-Play: 'Play', sans-serif;
+  --font-family-Alfa: 'Alfa Slab One', cursive;
+
+  --primary-gradient: linear-gradient(#1990df,#8cf5e7);
+
+  --color-bg: #f8f8f8;
+  --color-green-dark: #566D7F;
+  --color-green-light: #5AC0AB;
+  --color-blue-light: #9af0ff;
+  --color-blue: #2988f5;
+  --color-footer: #292c2f;
+  --color-text: #000;
+  --color-grad-blue: #0093E9;
+  --color-grad-lblue: #80D0C7;
+
+  --color-midnight: #114955;
+  --color-cyan: #28ADE2;
+  --color-beau: #BDD7EF;
+  --color-turquoise: #3BD6C6;
+  --color-middlebg: #A7F1E3;
+}
+

@@ -1,0 +1,63 @@
+/** about section **/
+
+.about {
+  background: #dcf0fc;
+  box-shadow: inset 0px 1px 87px -60px #6d6d6d;
+  padding: 90px 0;
+}
+
+.about .titlepage {
+  text-align: right;
+  padding: 0;
+  max-width: 541px;
+  width: 100%;
+  float: left;
+}
+
+.about .titlepage h2 {
+  margin-bottom: 20px;
+}
+
+.about .titlepage p {
+  color: #030303;
+  font-size: 17px;
+  line-height: 28px;
+  font-weight: 500;
+  padding-bottom: 30px;
+}
+
+.about .titlepage .read_more:hover {
+  color: #fff;
+}
+
+.about_img {
+  max-width: 600px;
+  width: 100%;
+  float: right;
+}
+
+.about_img figure {
+  margin: 0;
+}
+
+.about_img figure img {
+  width: 100%;
+  border-radius: 25px;
+}
+
+.titlepage {
+  text-align: center;
+  padding-bottom: 60px;
+}
+
+.titlepage h2 {
+  font-size: 50px;
+  color: #090807;
+  line-height: 55px;
+  font-weight: bold;
+  padding: 0;
+}
+
+.blu {
+  color: #0808ff;
+}
