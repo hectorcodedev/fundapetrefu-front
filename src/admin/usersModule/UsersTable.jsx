@@ -1,6 +1,7 @@
 import React from "react";
 import DataTable from "react-data-table-component";
 import { FaEdit, FaTimes, FaUnlock } from "react-icons/fa";
+import { api } from "../api"; // Asegúrate de importar tu API para hacer la solicitud
 
 const paginationOptions = {
   rowsPerPageText: "Registros por página:",
@@ -10,6 +11,18 @@ const paginationOptions = {
 };
 
 const UsersTable = ({ data, handleEdit, handleDelete, setShowModal }) => {
+
+  const handleResetPassword = async (dniNumber) => {
+    try {
+      const dniNumberAsNumber = Number(dniNumber);
+      const response = await api.post(`/users/reset-password`, { dniNumber: dniNumberAsNumber });
+      alert("Contraseña restaurada con éxito");
+    } catch (error) {
+      alert("Error al restaurar la contraseña");
+      console.error(error);
+    }
+  };
+
   const columns = [
     {
       name: "ID",
@@ -64,10 +77,7 @@ const UsersTable = ({ data, handleEdit, handleDelete, setShowModal }) => {
       cell: (row) => (
         <button
           className="btn btn-warning"
-          onClick={() => {
-            setShowModal(true);
-            handleEdit(row.id);
-          }}
+          onClick={() => handleResetPassword(row.dniNumber)}  // Pasar dniNumber al hacer clic
         >
           <FaUnlock />
         </button>
