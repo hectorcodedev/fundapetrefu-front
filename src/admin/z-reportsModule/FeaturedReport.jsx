@@ -3,6 +3,7 @@ import DataTable from "react-data-table-component";
 import NavbarAdmin from "../navbarAdmin/NavbarAdmin";
 import { Loader } from "../../admin";
 import { api } from "../api";
+import * as XLSX from "xlsx";  // Importa la librería xlsx
 
 const customersUrl = "/pets/featured";
 
@@ -40,11 +41,24 @@ const FeaturedReport = () => {
     { name: "Descripción", selector: (row) => row.description, sortable: false, wrap: true }
   ];
 
+  // Función para exportar los datos a un archivo Excel
+  const exportToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(data); // Convertir los datos a una hoja de Excel
+    const wb = XLSX.utils.book_new();  // Crear un nuevo libro
+    XLSX.utils.book_append_sheet(wb, ws, "Mascotas Destacadas"); // Añadir la hoja al libro
+    XLSX.writeFile(wb, "informe_mascotas_destacadas.xlsx"); // Descargar el archivo
+  };
+
   return (
     <div>
       <NavbarAdmin />
       <h3 className="mt-5 text-center">Informe Mascotas Destacadas</h3>
       <div className="container mt-4">
+        {/* Botón para exportar a Excel */}
+        <button onClick={exportToExcel} className="btn btn-success mb-4">
+          Exportar a Excel
+        </button>
+
         {loading ? (
           <Loader />
         ) : (
