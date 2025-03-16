@@ -7,10 +7,9 @@ import { api } from "../api";
 import { Modal } from "react-bootstrap";
 import { FaPlusSquare } from "react-icons/fa";
 import { Loader } from "../../admin";
+import Swal from "sweetalert2";
 import "./adoptersModule.css";
 
-// const baseUrl = "http://localhost:3333";
-// const customersUrl = `${baseUrl}/adopters`;
 const customersUrl = "/adopters";
 
 const AdoptersModule = () => {
@@ -19,17 +18,13 @@ const AdoptersModule = () => {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm({
-    defaultValues: {
-      adopterDniNumber: "",
-      adopterFirstName: "",
-      adopterLastName: "",
-    },
-  });
+  } = useForm();
+
   const [data, setData] = useState([]);
   const [editItemId, setEditItemId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -44,27 +39,55 @@ const AdoptersModule = () => {
     setEditItemId(id);
     const item = data.find((item) => item.id === id);
     reset(item);
+    setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Estás seguro(a) de eliminar?");
-    if (confirmDelete) {
-      try {
-        await api.delete(`${customersUrl}/${id}`);
-        setData(data.filter((item) => item.id !== id));
-      } catch (error) {
-        console.log(error);
-      }
-    }
-  };
-
-  const handleReset = () => {
+  const handleOpenModal = () => {
     setEditItemId(null);
     reset({
       adopterDniNumber: "",
       adopterFirstName: "",
       adopterLastName: "",
     });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    const confirmResult = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¡Esta acción no se puede deshacer!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (confirmResult.isConfirmed) {
+      try {
+        await api.delete(`${customersUrl}/${id}`);
+        setData(data.filter((item) => item.id !== id));
+
+        Swal.fire({
+          icon: "success",
+          title: "Adoptante Eliminado",
+          text: "El adoptante fue eliminado correctamente.",
+        });
+      } catch (error) {
+        console.log(error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo eliminar el adoptante.",
+        });
+      }
+    }
+  };
+
+  const handleReset = () => {
+    setEditItemId(null);
+    reset();
   };
 
   const onSubmit = async (formData) => {
@@ -72,170 +95,124 @@ const AdoptersModule = () => {
       try {
         await api.patch(`${customersUrl}/${editItemId}`, formData);
         setData(
-          data.map((item) => {
-            if (item.id === editItemId) {
-              return {
-                ...item,
-                adopterDniNumber: formData.adopterDniNumber,
-                adopterFirstName: formData.adopterFirstName,
-                adopterLastName: formData.adopterLastName,
-              };
-            } else {
-              return item;
-            }
-          })
+          data.map((item) =>
+            item.id === editItemId ? { ...item, ...formData } : item
+          )
         );
+        Swal.fire({
+          icon: "success",
+          title: "Adoptante Actualizado",
+          text: "Los datos del adoptante fueron modificados correctamente.",
+        });
         setEditItemId(null);
       } catch (error) {
         console.log(error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo actualizar el adoptante.",
+        });
       }
-      setShowModal(false);
     } else {
       try {
-        let newItem;
-        if (!formData.id) {
-          newItem = {
-            ...formData,
-            id: uuidv4(),
-          };
-        } else {
-          newItem = formData;
-        }
+        let newItem = { ...formData, id: uuidv4() };
         const response = await api.post(customersUrl, newItem);
-        newItem = response.data;
-        setData([...data, newItem]);
+        setData([...data, response.data]);
+
+        Swal.fire({
+          icon: "success",
+          title: "Adoptante Creado",
+          text: "Se agregó el adoptante correctamente.",
+        });
       } catch (error) {
         console.log(error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo crear el adoptante.",
+        });
       }
-      setShowModal(false);
     }
+    setShowModal(false);
     reset();
   };
+
+  const filteredData = data.filter((adopter) =>
+    adopter.adopterFirstName.toLowerCase().includes(search.toLowerCase())
+  );
 
   return (
     <div>
       <NavbarAdmin />
       <div className="d-flex justify-content-center align-items-end">
         <h3 className="mt-5 text-center">Módulo Adoptantes</h3>
-        <button
-          className="btn btn-success ms-3"
-          onClick={() => setShowModal(true)}
-        >
+        <button className="btn btn-success ms-3" onClick={handleOpenModal}>
           <FaPlusSquare />
         </button>
       </div>
 
-      <Modal
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        dialogClassName="myModal"
-      >
+      {/* 🔎 Búsqueda */}
+      <div className="d-flex justify-content-center my-3">
+        <input
+          type="text"
+          className="form-control w-50"
+          placeholder="Buscar adoptante..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <button className="btn btn-warning ms-2" onClick={() => setSearch("")}>
+          Limpiar
+        </button>
+      </div>
+
+      {/* 📝 Modal */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} dialogClassName="myModal">
         <Modal.Header closeButton>
-          <Modal.Title>Ingrese los datos</Modal.Title>
+          <Modal.Title>{editItemId ? "Editar Adoptante" : "Agregar Adoptante"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="row mt-3">
-            <div className="d-flex justify-content-center">
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <div className="col-2 m-1">
-                  <input type="hidden" {...register("id")} />
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="container">
+              <div className="row">
+                {[
+                  { name: "adopterDniNumber", label: "Número Documento (*)", type: "number", required: true },
+                  { name: "adopterFirstName", label: "Nombres (*)", type: "text", required: true },
+                  { name: "adopterLastName", label: "Apellidos (*)", type: "text", required: true },
+                ].map((field, index) => (
+                  <div key={index} className="col-md-4 mb-3">
+                    <label className="form-label">{field.label}</label>
+                    <input
+                      {...register(field.name, { required: `${field.label} es obligatorio` })}
+                      type={field.type}
+                      className="form-control"
+                      onChange={(e) => {
+                        if (field.name === "adopterFirstName" || field.name === "adopterLastName") {
+                          e.target.value = e.target.value.toUpperCase();
+                        }
+                      }}
+                    />
+                    {errors[field.name] && <p className="errorMsg">{errors[field.name].message}</p>}
+                  </div>
+                ))}
+              </div>
+
+              <div className="row">
+                <div className="col-12 text-center mt-3">
+                  <button className="btn btn-primary me-2" type="submit">
+                    {editItemId ? "Guardar" : "Crear"}
+                  </button>
+                  <button className="btn btn-danger" type="button" onClick={handleReset}>
+                    Resetear
+                  </button>
                 </div>
-                <div className="d-flex flex-wrap justify-content-center">
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("adopterDniNumber", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 7,
-                          message: "Mínimo siete caracteres",
-                        },
-                        valueAsNumber: true,
-                      })}
-                      name="adopterDniNumber"
-                      type="number"
-                      className="form-control"
-                      placeholder="* Número Documento"
-                    />
-                    {errors.adopterDniNumber && (
-                      <p className="errorMsg">
-                        {errors.adopterDniNumber.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("adopterFirstName", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="adopterFirstName"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Nombres Adoptante"
-                    />
-                    {errors.adopterFirstName && (
-                      <p className="errorMsg">
-                        {errors.adopterFirstName.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("adopterLastName", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="adopterLastName"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Apellidos Adoptante"
-                    />
-                    {errors.adopterLastName && (
-                      <p className="errorMsg">
-                        {errors.adopterLastName.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <button className="btn btn-primary" type="submit">
-                      {editItemId ? "Guardar" : "Crear"}
-                    </button>
-
-                    <button
-                      className="btn btn-danger ms-3"
-                      type="button"
-                      onClick={handleReset}
-                    >
-                      Resetear
-                    </button>
-                  </div>
-                </div>
-              </form>
+              </div>
             </div>
-          </div>
+          </form>
         </Modal.Body>
-        <Modal.Footer></Modal.Footer>
       </Modal>
 
-      {loading ? (
-        <Loader />
-      ) : (
-        <AdoptersTable
-          data={data}
-          handleEdit={handleEdit}
-          handleDelete={handleDelete}
-          setShowModal={setShowModal}
-        />
-      )}
+      {/* 📋 Tabla de Adoptantes */}
+      {loading ? <Loader /> : <AdoptersTable data={filteredData} handleEdit={handleEdit} handleDelete={handleDelete} setShowModal={setShowModal}  />}
     </div>
   );
 };

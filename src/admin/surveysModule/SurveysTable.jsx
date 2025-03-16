@@ -1,101 +1,78 @@
 import React from "react";
+import DataTable from "react-data-table-component";
 import { FaEdit, FaTimes } from "react-icons/fa";
 
+const paginationOptions = {
+  rowsPerPageText: "Registros por página:",
+  rangeSeparatorText: "de",
+  selectAllRowsItem: true,
+  selectAllRowsItemText: "Todos"
+};
+
 const SurveysTable = ({ data, handleEdit, handleDelete, setShowModal }) => {
-  return (
-    <div>
-      <div className="row d-flex justify-content-center mt-5">
-        <div
-          className="table-responsive"
-          style={{ width: 95 + "%", fontSize: 80 + "%" }}
+  const columns = [
+    { name: "ID", selector: row => row.id, sortable: true, center: true },
+    { name: "Documento", selector: row => row.dniNumber, sortable: true },
+    { name: "Composición Familiar", selector: row => row.familyComposition, sortable: true },
+    { name: "Cant. Adultos", selector: row => row.adultsQty, sortable: true },
+    { name: "Cant. Niños", selector: row => row.childrenQty, sortable: true },
+    { name: "Cant. Bebés", selector: row => row.babiesQty, sortable: true },
+    { name: "Tipo Vivienda", selector: row => row.houseType, sortable: true },
+    { name: "Tiempo Solo", selector: row => row.timeAlone, sortable: true },
+    { name: "Niños Pequeños", selector: row => row.anyKids, sortable: true },
+    { name: "Edades", selector: row => row.childrenAges, sortable: false, wrap: true },
+    { name: "Razón Adopción", selector: row => row.reasons, sortable: false, wrap: true },
+    { name: "Otra Razón", selector: row => row.reasonsOther, sortable: false, wrap: true },
+    { name: "Tuvo Mascota", selector: row => row.hadPet, sortable: true },
+    { name: "Razón No Tiene", selector: row => row.hadPetOther, sortable: false, wrap: true },
+    { name: "Tienes Mascotas", selector: row => row.havePet, sortable: true },
+    { name: "Características", selector: row => row.havePetOther, sortable: false, wrap: true },
+    { name: "Cómo te enteraste", selector: row => row.getFundapetInfo, sortable: true },
+    { name: "Razón Adoptar", selector: row => row.adoptReason, sortable: false, wrap: true },
+    { name: "Nombre Ref1", selector: row => row.ref1Name, sortable: true },
+    { name: "Número Ref1", selector: row => row.ref1Cellphone, sortable: true },
+    { name: "Nombre Ref2", selector: row => row.ref2Name, sortable: true },
+    { name: "Número Ref2", selector: row => row.ref2Cellphone, sortable: true },
+    {
+      name: "Editar",
+      button: true,
+      cell: row => (
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            setShowModal(true);
+            handleEdit(row.id);
+          }}
         >
-          <table className="table table-hover table-bordered">
-            <thead className="table-dark">
-              <tr>
-                <th className="text-center">Id</th>
-                <th className="text-center">Documento</th>
-                <th className="text-center">Composición Familiar</th>
-                <th className="text-center">Cant. Adultos</th>
-                <th className="text-center">Cant. Niños</th>
-                <th className="text-center">Cant. Bebés</th>
-                <th className="text-center">Tipo Vivienda</th>
-                <th className="text-center">Tiempo Solo</th>
-                <th className="text-center">Niños Pequeños</th>
-                <th className="text-center">Edades</th>
-                <th className="text-center">Razón Adopción</th>
-                <th className="text-center">Otra Razón</th>
-                <th className="text-center">Tuvo Mascota</th>
-                <th className="text-center">Razón No Tiene</th>
-                <th className="text-center">Tienes Mascotas</th>
-                <th className="text-center">Características</th>
-                <th className="text-center">Cómo te enteraste</th>
-                <th className="text-center">Razón Adoptar</th>
-                <th className="text-center">Nombre Ref1</th>
-                <th className="text-center">Numero Ref1</th>
-                <th className="text-center">Nombre Ref2</th>
-                <th className="text-center">Número Ref2</th>
-                <th className="text-center">Editar</th>
-                <th className="text-center">Eliminar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((item, index) => (
-                <tr key={index}>
-                  <td
-                    style={{
-                      wordWrap: "break-word",
-                      minWidth: 150 + "px",
-                      maxWidth: 150 + "px",
-                    }}
-                  >
-                    {item.id}
-                  </td>
-                  <td>{item.dniNumber}</td>
-                  <td>{item.familyComposition}</td>
-                  <td>{item.adultsQty}</td>
-                  <td>{item.childrenQty}</td>
-                  <td>{item.babiesQty}</td>
-                  <td>{item.houseType}</td>
-                  <td>{item.timeAlone}</td>
-                  <td>{item.anyKids}</td>
-                  <td>{item.childrenAges}</td>
-                  <td>{item.reasons}</td>
-                  <td>{item.reasonsOther}</td>
-                  <td>{item.hadPet}</td>
-                  <td>{item.hadPetOther}</td>
-                  <td>{item.havePet}</td>
-                  <td>{item.havePetOther}</td>
-                  <td>{item.getFundapetInfo}</td>
-                  <td>{item.adoptReason}</td>
-                  <td>{item.ref1Name}</td>
-                  <td>{item.ref1Cellphone}</td>
-                  <td>{item.ref2Name}</td>
-                  <td>{item.ref2Cellphone}</td>
-                  <td>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => {
-                        setShowModal(true);
-                        handleEdit(item.id);
-                      }}
-                    >
-                      <FaEdit />
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <FaTimes />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          <FaEdit />
+        </button>
+      )
+    },
+    {
+      name: "Eliminar",
+      button: true,
+      cell: row => (
+        <button className="btn btn-danger" onClick={() => handleDelete(row.id)}>
+          <FaTimes />
+        </button>
+      )
+    }
+  ];
+
+  return (
+    <div className="container mt-4">
+      <DataTable
+        columns={columns}
+        data={data}
+        pagination
+        paginationPerPage={5}
+        paginationRowsPerPageOptions={[5, 10, 15, 20]}
+        paginationComponentOptions={paginationOptions}
+        defaultSortFieldId={1}
+        highlightOnHover
+        striped
+        noDataComponent="No hay registros para mostrar"
+      />
     </div>
   );
 };

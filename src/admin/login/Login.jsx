@@ -31,7 +31,7 @@ const Login = () => {
         window.location.href = "/modulo/usuarios";
       } else {
         alert("Usuario o contraseña incorrectos")
-        window.location.href="/";
+        window.location.href = "/";
       }
     } catch (error) {
       console.error(error.response.data.message);
@@ -88,6 +88,10 @@ const Login = () => {
           </button>
         </form>
       </div>
+      <p>
+        ¿Olvidaste tu contraseña?
+        <a href="/resetPassword">Recupérala aquí</a>
+      </p>
     </>
   );
 };

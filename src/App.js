@@ -15,6 +15,7 @@ import {
   CandidatesModule,
   SurveysModule,
   Login,
+  ResetPassword,
   UsersModule,
   PetsModule,
   PetImagesModule,
@@ -44,6 +45,7 @@ function App() {
         <Route path="/noticias" element={<News />} />
         <Route path="/colors" element={<ColorPalette />} />
         <Route path="/login" element={<Login />} />
+        <Route path="/resetPassword" element={<ResetPassword />} />
         <Route path="/contacto" element={<Contact />} />
         <Route element={<ProtectedRoute />}>
           <Route path="/modulo/usuarios" element={<UsersModule />} />

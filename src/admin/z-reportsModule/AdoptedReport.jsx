@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
+import DataTable from "react-data-table-component";
 import NavbarAdmin from "../navbarAdmin/NavbarAdmin";
 import { Loader } from "../../admin";
 import { api } from "../api";
+import * as XLSX from "xlsx";  // Importa la librería xlsx
 
-// const baseUrl = "http://localhost:3333";
-// const customersUrl = `${baseUrl}/pets/adopted`;
 const customersUrl = "/pets/adopted";
+
+const paginationOptions = {
+  rowsPerPageText: "Registros por página:",
+  rangeSeparatorText: "de",
+  selectAllRowsItem: true,
+  selectAllRowsItemText: "Todos"
+};
 
 const AdoptedReport = () => {
   const [data, setData] = useState([]);
@@ -20,62 +27,50 @@ const AdoptedReport = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const columns = [
+    { name: "ID", selector: (row) => row.id, sortable: true },
+    { name: "Nombre", selector: (row) => row.petName, sortable: true },
+    { name: "Edad", selector: (row) => row.petAge, sortable: true },
+    { name: "Género", selector: (row) => row.petGender, sortable: true },
+    { name: "Especie", selector: (row) => row.petSpecies, sortable: true },
+    { name: "Tamaño", selector: (row) => row.petSize, sortable: true },
+    { name: "Condición Especial", selector: (row) => row.petSpecialCondition, sortable: true },
+    { name: "Adoptado?", selector: (row) => (row.isAdopted ? "Sí" : "No"), sortable: true },
+    { name: "Destacado?", selector: (row) => (row.isFeatured ? "Sí" : "No"), sortable: true },
+    { name: "Doc. Adoptante", selector: (row) => row.adopterDniNumber, sortable: true },
+    { name: "Descripción", selector: (row) => row.description, sortable: false, wrap: true }
+  ];
+
+  // Función para exportar los datos a un archivo Excel
+  const exportToExcel = () => {
+    const ws = XLSX.utils.json_to_sheet(data); // Convertir los datos a una hoja de Excel
+    const wb = XLSX.utils.book_new();  // Crear un nuevo libro
+    XLSX.utils.book_append_sheet(wb, ws, "Mascotas Adoptadas"); // Añadir la hoja al libro
+    XLSX.writeFile(wb, "informe_mascotas_adoptadas.xlsx"); // Descargar el archivo
+  };
+
   return (
     <div>
       <NavbarAdmin />
       <h3 className="mt-5 text-center">Informe Mascotas Adoptadas</h3>
-      <div className="row d-flex justify-content-center mt-5">
-        <div
-          className="table-responsive"
-          style={{ width: 95 + "%", fontSize: 80 + "%" }}
-        >
-          {loading ? (
-            <Loader />
-          ) : (
-            <table className="table table-hover table-bordered">
-              <thead className="table-dark">
-                <tr>
-                  <th className="text-center">Id</th>
-                  <th className="text-center">Nombre</th>
-                  <th className="text-center">Edad</th>
-                  <th className="text-center">Género</th>
-                  <th className="text-center">Especie</th>
-                  <th className="text-center">Tamaño</th>
-                  <th className="text-center">Condicion Especial</th>
-                  <th className="text-center">Adoptado?</th>
-                  <th className="text-center">Destacado?</th>
-                  <th className="text-center">Documento Adoptante</th>
-                  <th className="text-center">Descripción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((item, index) => (
-                  <tr key={index}>
-                    <td
-                      style={{
-                        wordWrap: "break-word",
-                        minWidth: 150 + "px",
-                        maxWidth: 150 + "px",
-                      }}
-                    >
-                      {item.id}
-                    </td>
-                    <td>{item.petName}</td>
-                    <td>{item.petAge}</td>
-                    <td>{item.petGender}</td>
-                    <td>{item.petSpecies}</td>
-                    <td>{item.petSize}</td>
-                    <td>{item.petSpecialCondition}</td>
-                    <td>{item.isAdopted ? "si" : "no"}</td>
-                    <td>{item.isFeatured ? "si" : "no"}</td>
-                    <td>{item.adopterDniNumber}</td>
-                    <td>{item.description}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+      <div className="container mt-4">
+        <button onClick={exportToExcel} className="btn btn-success mb-4">Exportar a Excel</button> {/* Botón de exportar */}
+        {loading ? (
+          <Loader />
+        ) : (
+          <DataTable
+            columns={columns}
+            data={data}
+            pagination
+            paginationPerPage={5}
+            paginationRowsPerPageOptions={[5, 10, 15, 20]}
+            paginationComponentOptions={paginationOptions}
+            defaultSortFieldId={1}
+            highlightOnHover
+            striped
+            noDataComponent="No hay registros para mostrar"
+          />
+        )}
       </div>
     </div>
   );

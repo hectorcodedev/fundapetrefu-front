@@ -1,89 +1,118 @@
 import React from "react";
+import DataTable from "react-data-table-component";
 import { FaEdit, FaTimes } from "react-icons/fa";
 
+const paginationOptions = {
+  rowsPerPageText: "Registros por página:",
+  rangeSeparatorText: "de",
+  selectAllRowsItem: true,
+  selectAllRowsItemText: "Todos"
+};
+
 const PetsTable = ({ data, handleEdit, handleDelete, setShowModal }) => {
-  return (
-    <div>
-      <div className="row d-flex justify-content-center mt-5">
-        <div
-          className="table-responsive"
-          style={{ width: 95 + "%", fontSize: 80 + "%" }}
+  const columns = [
+    {
+      name: "ID",
+      selector: (row) => row.id,
+      sortable: true,
+    },
+    {
+      name: "Nombre",
+      selector: (row) => row.petName,
+      sortable: true,
+    },
+    {
+      name: "Edad",
+      selector: (row) => row.petAge,
+      sortable: true,
+    },
+    {
+      name: "Género",
+      selector: (row) => row.petGender,
+      sortable: true,
+    },
+    {
+      name: "Especie",
+      selector: (row) => row.petSpecies,
+      sortable: true,
+    },
+    {
+      name: "Tamaño",
+      selector: (row) => row.petSize,
+      sortable: true,
+    },
+    {
+      name: "Condición Especial",
+      selector: (row) => row.petSpecialCondition,
+      sortable: true,
+    },
+    {
+      name: "Adoptado?",
+      selector: (row) => (row.isAdopted ? "Sí" : "No"),
+      sortable: true,
+    },
+    {
+      name: "Destacado?",
+      selector: (row) => (row.isFeatured ? "Sí" : "No"),
+      sortable: true,
+    },
+    {
+      name: "Imagen Destacada",
+      selector: (row) => row.featuredImg,
+      sortable: false,
+      wrap: true,
+    },
+    {
+      name: "Descripción",
+      selector: (row) => row.description,
+      sortable: false,
+      wrap: true,
+    },
+    {
+      name: "Doc. Adoptante",
+      selector: (row) => row.adopterDniNumber,
+      sortable: true,
+    },
+    {
+      name: "Editar",
+      button: true,
+      cell: (row) => (
+        <button
+          className="btn btn-primary"
+          onClick={() => {
+            setShowModal(true);
+            handleEdit(row.id);
+          }}
         >
-          <table className="table table-hover table-bordered">
-            <thead className="table-dark">
-              <tr>
-                <th className="text-center">Id</th>
-                <th className="text-center">Nombre</th>
-                <th className="text-center">Edad</th>
-                <th className="text-center">Género</th>
-                <th className="text-center">Especie</th>
-                <th className="text-center">Tamaño</th>
-                <th className="text-center">Condicion Especial</th>
-                <th className="text-center">Adoptado?</th>
-                <th className="text-center">Destacado?</th>
-                <th className="text-center">Imagen Destacada</th>
-                <th className="text-center">Descripción</th>
-                <th className="text-center">Documento Adoptante</th>
-                <th className="text-center">Editar</th>
-                <th className="text-center">Eliminar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.map((item, index) => (
-                <tr key={index}>
-                  <td
-                    style={{
-                      wordWrap: "break-word",
-                      minWidth: 150 + "px",
-                      maxWidth: 150 + "px",
-                    }}
-                  >
-                    {item.id}
-                  </td>
-                  <td>{item.petName}</td>
-                  <td>{item.petAge}</td>
-                  <td>{item.petGender}</td>
-                  <td>{item.petSpecies}</td>
-                  <td>{item.petSize}</td>
-                  <td>{item.petSpecialCondition}</td>
-                  <td>{item.isAdopted ? "si" : "no"}</td>
-                  <td>{item.isFeatured ? "si" : "no"}</td>
-                  <td
-                    style={{
-                      wordWrap: "break-word",
-                      minWidth: 150 + "px",
-                      maxWidth: 150 + "px",
-                    }}
-                  >
-                    {item.featuredImg}
-                  </td>
-                  <td>{item.description}</td>
-                  <td>{item.adopterDniNumber}</td>
-                  <td>
-                    <button
-                      className="btn btn-primary"
-                      onClick={() => {
-                        setShowModal(true);
-                        handleEdit(item.id);
-                      }}
-                    >
-                      <FaEdit />
-                    </button>
-                  </td>
-                  <td>
-                    <button
-                      className="btn btn-danger"
-                      onClick={() => handleDelete(item.id)}
-                    >
-                      <FaTimes />
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
+          <FaEdit />
+        </button>
+      ),
+    },
+    {
+      name: "Eliminar",
+      button: true,
+      cell: (row) => (
+        <button className="btn btn-danger" onClick={() => handleDelete(row.id)}>
+          <FaTimes />
+        </button>
+      ),
+    },
+  ];
+
+  return (
+    <div className="container mt-4">
+      <DataTable
+        columns={columns}
+        data={data}
+        pagination
+        paginationPerPage={5}
+        paginationRowsPerPageOptions={[5, 10, 15, 20]}
+        paginationComponentOptions={paginationOptions}
+        defaultSortFieldId={1}
+        highlightOnHover
+        striped
+        noDataComponent="No hay registros para mostrar"
+      />
     </div>
   );
 };

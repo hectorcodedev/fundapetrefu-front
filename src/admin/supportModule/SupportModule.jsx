@@ -7,10 +7,9 @@ import { api } from "../api";
 import { Modal } from "react-bootstrap";
 import { FaPlusSquare } from "react-icons/fa";
 import { Loader } from "../../admin";
+import Swal from "sweetalert2";
 import "./supportModule.css";
 
-// const baseUrl = "http://localhost:3333";
-// const customersUrl = `${baseUrl}/supports`;
 const customersUrl = "/supports";
 
 const SupportModule = () => {
@@ -19,18 +18,13 @@ const SupportModule = () => {
     handleSubmit,
     reset,
     formState: { errors },
-  } = useForm({
-    defaultValues: {
-      supportTitle: "",
-      supportContent: "",
-      supportImg: "",
-      supportLink: "",
-    },
-  });
+  } = useForm();
+
   const [data, setData] = useState([]);
   const [editItemId, setEditItemId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -45,216 +39,134 @@ const SupportModule = () => {
     setEditItemId(id);
     const item = data.find((item) => item.id === id);
     reset(item);
+    setShowModal(true);
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Estás seguro(a) de eliminar?");
-    if (confirmDelete) {
+    const confirmResult = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¡Esta acción no se puede deshacer!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+      returnFocus: false, // Opcional: evita problemas con el foco
+    }).then((result) => result);
+
+    if (confirmResult.isDismissed) {
       try {
         await api.delete(`${customersUrl}/${id}`);
-        setData(data.filter((item) => item.id !== id));
+        // Esperar la respuesta antes de actualizar el estado
+        setData((prevData) => prevData.filter((item) => item.id !== id));
+
+        Swal.fire({
+          icon: "success",
+          title: "Soporte Eliminado",
+          text: "El soporte fue eliminado correctamente.",
+        });
       } catch (error) {
         console.log(error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo eliminar el soporte.",
+        });
       }
     }
   };
 
-  const handleReset = () => {
+  const handleOpenModal = () => {
     setEditItemId(null);
-    reset({
-      supportTitle: "",
-      supportContent: "",
-      supportImg: "",
-      supportLink: "",
-    });
+    reset({ supportTitle: "", supportContent: "", supportImg: "", supportLink: "" });
+    setShowModal(true);
   };
 
   const onSubmit = async (formData) => {
     if (editItemId) {
       try {
         await api.patch(`${customersUrl}/${editItemId}`, formData);
-        setData(
-          data.map((item) => {
-            if (item.id === editItemId) {
-              return {
-                ...item,
-                supportTitle: formData.supportTitle,
-                supportContent: formData.supportContent,
-                supportImg: formData.supportImg,
-                supportLink: formData.supportLink,
-              };
-            } else {
-              return item;
-            }
-          })
-        );
-        setEditItemId(null);
+        setData(data.map((item) => (item.id === editItemId ? { ...item, ...formData } : item)));
+        Swal.fire("Actualizado", "Los datos fueron modificados correctamente.", "success");
       } catch (error) {
-        console.log(error);
+        Swal.fire("Error", "No se pudo actualizar el registro.", "error");
       }
-      setShowModal(false);
     } else {
       try {
-        let newItem;
-        if (!formData.id) {
-          newItem = {
-            ...formData,
-            id: uuidv4(),
-          };
-        } else {
-          newItem = formData;
-        }
+        let newItem = { ...formData, id: uuidv4() };
         const response = await api.post(customersUrl, newItem);
-        newItem = response.data;
-        setData([...data, newItem]);
+        setData([...data, response.data]);
+        Swal.fire("Creado", "Se agregó el registro correctamente.", "success");
       } catch (error) {
-        console.log(error);
+        Swal.fire("Error", "No se pudo crear el registro.", "error");
       }
-      setShowModal(false);
     }
+    setShowModal(false);
     reset();
   };
 
+  const filteredData = data.filter((item) => item.supportTitle.toLowerCase().includes(search.toLowerCase()));
+
   return (
-    <>
+    <div>
       <NavbarAdmin />
       <div className="d-flex justify-content-center align-items-end">
         <h3 className="mt-5 text-center">Módulo Ayúdanos</h3>
-        <button
-          className="btn btn-success ms-3"
-          onClick={() => setShowModal(true)}
-        >
+        <button className="btn btn-success ms-3" onClick={handleOpenModal}>
           <FaPlusSquare />
         </button>
       </div>
 
-      <Modal
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        dialogClassName="myModal"
-      >
+      <div className="d-flex justify-content-center my-3">
+        <input
+          type="text"
+          className="form-control w-25"
+          placeholder="Buscar..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <button className="btn btn-warning ms-2" onClick={() => setSearch("")}>Limpiar</button>
+      </div>
+
+      <Modal show={showModal} onHide={() => setShowModal(false)} dialogClassName="myModal">
         <Modal.Header closeButton>
-          <Modal.Title>Ingrese los datos</Modal.Title>
+          <Modal.Title>{editItemId ? "Editar Registro" : "Agregar Registro"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="row mt-3">
-            <div className="d-flex justify-content-center">
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <div className="col-2 m-1">
-                  <input type="hidden" {...register("id")} />
-                </div>
-
-                <div className="d-flex flex-wrap justify-content-center">
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("supportTitle", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="supportTitle"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Titulo"
-                    />
-                    {errors.supportTitle && (
-                      <p className="errorMsg">{errors.supportTitle.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("supportContent", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="supportContent"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Contenido"
-                    />
-                    {errors.supportContent && (
-                      <p className="errorMsg">
-                        {errors.supportContent.message}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("supportImg", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="supportImg"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Imagen"
-                    />
-                    {errors.supportImg && (
-                      <p className="errorMsg">{errors.supportImg.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("supportLink", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="supportLink"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Link"
-                    />
-                    {errors.supportLink && (
-                      <p className="errorMsg">{errors.supportLink.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <button className="btn btn-primary" type="submit">
-                      {editItemId ? "Guardar" : "Crear"}
-                    </button>
-
-                    <button
-                      className="btn btn-danger ms-3"
-                      type="button"
-                      onClick={handleReset}
-                    >
-                      Resetear
-                    </button>
-                  </div>
-                </div>
-              </form>
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="mb-3">
+              <label className="form-label">Título</label>
+              <input {...register("supportTitle", { required: "Campo obligatorio" })} className="form-control" />
+              {errors.supportTitle && <p className="errorMsg">{errors.supportTitle.message}</p>}
             </div>
-          </div>
+
+            <div className="mb-3">
+              <label className="form-label">Contenido</label>
+              <input {...register("supportContent", { required: "Campo obligatorio" })} className="form-control" />
+              {errors.supportContent && <p className="errorMsg">{errors.supportContent.message}</p>}
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Imagen</label>
+              <input {...register("supportImg")} className="form-control" />
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label">Link</label>
+              <input {...register("supportLink")} className="form-control" />
+            </div>
+
+            <div className="text-center">
+              <button className="btn btn-primary me-2" type="submit">{editItemId ? "Guardar" : "Crear"}</button>
+              <button className="btn btn-danger" type="button" onClick={() => reset()}>Resetear</button>
+            </div>
+          </form>
         </Modal.Body>
-        <Modal.Footer></Modal.Footer>
       </Modal>
 
-      {loading ? (
-        <Loader />
-      ) : (
-        <SupportTable
-          data={data}
-          handleEdit={handleEdit}
-          handleDelete={handleDelete}
-          setShowModal={setShowModal}
-        />
-      )}
-    </>
+      {loading ? <Loader /> : <SupportTable data={filteredData} handleEdit={handleEdit} handleDelete={handleDelete} setShowModal={setShowModal} />}
+    </div>
   );
 };
 
