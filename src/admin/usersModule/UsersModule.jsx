@@ -7,10 +7,9 @@ import { api } from "../api";
 import { Modal } from "react-bootstrap";
 import { FaPlusSquare } from "react-icons/fa";
 import { Loader } from "../../admin";
+import Swal from "sweetalert2";
 import "./usersModule.css";
 
-// const baseUrl = "http://localhost:3333";
-// const customersUrl = `${baseUrl}/users`;
 const customersUrl = "/users";
 
 const UsersModule = () => {
@@ -33,6 +32,7 @@ const UsersModule = () => {
   const [editItemId, setEditItemId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
     setLoading(true);
@@ -47,21 +47,10 @@ const UsersModule = () => {
     setEditItemId(id);
     const item = data.find((item) => item.id === id);
     reset(item);
+    setShowModal(true);
   };
 
-  const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Estás seguro(a) de eliminar?");
-    if (confirmDelete) {
-      try {
-        await api.delete(`${customersUrl}/${id}`);
-        setData(data.filter((item) => item.id !== id));
-      } catch (error) {
-        console.log(error);
-      }
-    }
-  };
-
-  const handleReset = () => {
+  const handleOpenModal = () => {
     setEditItemId(null);
     reset({
       email: "",
@@ -70,212 +59,131 @@ const UsersModule = () => {
       lastName: "",
       dniNumber: "",
     });
+    setShowModal(true);
+  };
+
+  const handleDelete = async (id) => {
+    const confirmResult = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¡Esta acción no se puede deshacer!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (confirmResult.isConfirmed) {
+      try {
+        await api.delete(`${customersUrl}/${id}`);
+        setData(data.filter((item) => item.id !== id));
+        Swal.fire("Eliminado", "Usuario eliminado correctamente.", "success");
+      } catch (error) {
+        console.log(error);
+        Swal.fire("Error", "No se pudo eliminar el usuario.", "error");
+      }
+    }
+  };
+
+  const handleReset = () => {
+    setEditItemId(null);
+    reset();
+  };
+
+  const fieldLabels = {
+    email: "Correo Electrónico",
+    password: "Contraseña",
+    firstName: "Nombre",
+    lastName: "Apellido",
+    dniNumber: "Número de DNI"
   };
 
   const onSubmit = async (formData) => {
+    const formattedData = {
+      ...formData,
+      dniNumber: formData.dniNumber ? Number(formData.dniNumber) : null,
+    };
+
     if (editItemId) {
       try {
-        await api.patch(`${customersUrl}/${editItemId}`, formData);
-        setData(
-          data.map((item) => {
-            if (item.id === editItemId) {
-              return {
-                ...item,
-                email: formData.email,
-                password: formData.password,
-                firstName: formData.firstName,
-                lastName: formData.lastName,
-                dniNumber: formData.dniNumber,
-              };
-            } else {
-              return item;
-            }
-          })
-        );
+        await api.patch(`${customersUrl}/${editItemId}`, formattedData);
+        setData(data.map((item) => (item.id === editItemId ? { ...item, ...formattedData } : item)));
+        Swal.fire("Actualizado", "Usuario actualizado correctamente.", "success");
         setEditItemId(null);
       } catch (error) {
         console.log(error);
+        Swal.fire("Error", "No se pudo actualizar el usuario.", "error");
       }
-      setShowModal(false);
     } else {
       try {
-        let newItem;
-        if (!formData.id) {
-          newItem = {
-            ...formData,
-            id: uuidv4(),
-          };
-        } else {
-          newItem = formData;
-        }
+        let newItem = { ...formattedData, id: uuidv4() };
         const response = await api.post(customersUrl, newItem);
-        newItem = response.data;
-        setData([...data, newItem]);
+        setData([...data, response.data]);
+        Swal.fire("Creado", "Usuario agregado correctamente.", "success");
       } catch (error) {
         console.log(error);
+        Swal.fire("Error", "No se pudo crear el usuario.", "error");
       }
-      setShowModal(false);
     }
+    setShowModal(false);
     reset();
   };
+
+  const filteredData = data.filter((user) => user.email.toLowerCase().includes(search.toLowerCase()));
 
   return (
     <div>
       <NavbarAdmin />
       <div className="d-flex justify-content-center align-items-end">
         <h3 className="mt-5 text-center">Módulo Usuarios</h3>
-        <button
-          className="btn btn-success ms-3"
-          onClick={() => setShowModal(true)}
-        >
+        <button className="btn btn-success ms-3" onClick={handleOpenModal}>
           <FaPlusSquare />
         </button>
       </div>
 
-      <Modal
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        dialogClassName="myModal"
-      >
+      <div className="d-flex flex-wrap justify-content-center my-3">
+        <input
+          type="text"
+          className="form-control w-25 mx-2"
+          placeholder="Buscar usuario..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+        <button className="btn btn-warning mx-2" onClick={() => setSearch("")}>Limpiar</button>
+      </div>
+
+      <Modal show={showModal} onHide={() => setShowModal(false)} dialogClassName="myModal">
         <Modal.Header closeButton>
-          <Modal.Title>Ingrese los datos</Modal.Title>
+          <Modal.Title>{editItemId ? "Editar Usuario" : "Agregar Usuario"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="row mt-3">
-            <div className="d-flex justify-content-center">
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <div className="col-2 m-1">
-                  <input type="hidden" {...register("id")} />
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="row">
+              {["email", "firstName", "lastName", "dniNumber", ...(editItemId ? [] : ["password"])].map((field, index) => (
+                <div key={index} className="col-md-6 mb-3">
+                  <label className="form-label">{fieldLabels[field] || field}</label>
+                  <input
+                    {...register(field, { required: `${fieldLabels[field] || field} es obligatorio` })}
+                    type={field === "dniNumber" ? "number" : field === "password" ? "password" : "text"}
+                    className="form-control"
+                    autoComplete="off"
+                  />
+                  {errors[field] && <p className="errorMsg">{errors[field].message}</p>}
                 </div>
-
-                <div className="d-flex flex-wrap justify-content-center">
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("email", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="email"
-                      type="email"
-                      className="form-control"
-                      placeholder="* Correo"
-                    />
-                    {errors.email && (
-                      <p className="errorMsg">{errors.email.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("password", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="password"
-                      type="password"
-                      className="form-control"
-                      placeholder="* Contraseña"
-                    />
-                    {errors.password && (
-                      <p className="errorMsg">{errors.password.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("firstName", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="firstName"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Nombres"
-                    />
-                    {errors.firstName && (
-                      <p className="errorMsg">{errors.firstName.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("lastName", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="lastName"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Apellidos"
-                    />
-                    {errors.lastName && (
-                      <p className="errorMsg">{errors.lastName.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("dniNumber", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 7,
-                          message: "Mínimo siete dígitos",
-                        },
-                        valueAsNumber: true,
-                      })}
-                      name="dniNumber"
-                      type="number"
-                      className="form-control"
-                      placeholder="* Número Documento"
-                    />
-                    {errors.dniNumber && (
-                      <p className="errorMsg">{errors.dniNumber.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <button className="btn btn-primary" type="submit">
-                      {editItemId ? "Guardar" : "Crear"}
-                    </button>
-
-                    <button
-                      className="btn btn-danger ms-3"
-                      type="button"
-                      onClick={handleReset}
-                    >
-                      Resetear
-                    </button>
-                  </div>
-                </div>
-              </form>
+              ))}
             </div>
-          </div>
+            <button className="btn btn-primary me-2" type="submit">
+              {editItemId ? "Guardar" : "Crear"}
+            </button>
+            <button className="btn btn-danger" type="button" onClick={handleReset}>
+              Resetear
+            </button>
+          </form>
         </Modal.Body>
-        <Modal.Footer></Modal.Footer>
       </Modal>
 
-      {loading ? (
-        <Loader />
-      ) : (
-        <UsersTable
-          data={data}
-          handleEdit={handleEdit}
-          handleDelete={handleDelete}
-          setShowModal={setShowModal}
-        />
-      )}
+      {loading ? <Loader /> : <UsersTable data={filteredData} handleEdit={handleEdit} handleDelete={handleDelete} setShowModal={setShowModal} />}
     </div>
   );
 };

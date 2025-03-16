@@ -4,6 +4,7 @@ export { default as NewsTable } from "./newsModule/NewsTable";
 export { default as CandidatesModule } from "./candidatesModule/CandidatesModule";
 export { default as SurveysModule } from "./surveysModule/SurveysModule";
 export { default as Login } from "./login/Login";
+export { default as ResetPassword } from "./resetPassword/ResetPassword";
 export { default as UsersModule } from "./usersModule/UsersModule";
 export { default as NavbarAdmin } from "./navbarAdmin/NavbarAdmin";
 export { default as PetsModule } from "./petsModule/PetsModule";

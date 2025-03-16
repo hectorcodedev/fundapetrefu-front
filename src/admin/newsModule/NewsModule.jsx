@@ -7,10 +7,9 @@ import { api } from "../api";
 import { Modal } from "react-bootstrap";
 import { FaPlusSquare } from "react-icons/fa";
 import { Loader } from "../../admin";
+import Swal from "sweetalert2";
 import "./newsModule.css";
 
-// const baseUrl = "http://localhost:3333";
-// const customersUrl = `${baseUrl}/news`;
 const customersUrl = "/news";
 
 const NewsModule = () => {
@@ -26,6 +25,7 @@ const NewsModule = () => {
       newsImg: "",
     },
   });
+
   const [data, setData] = useState([]);
   const [editItemId, setEditItemId] = useState(null);
   const [showModal, setShowModal] = useState(false);
@@ -36,7 +36,7 @@ const NewsModule = () => {
     api
       .get(customersUrl)
       .then((response) => setData(response.data))
-      .catch((error) => console.log(error))
+      .catch((error) => console.error("Error al obtener noticias:", error))
       .finally(() => setLoading(false));
   }, []);
 
@@ -44,27 +44,54 @@ const NewsModule = () => {
     setEditItemId(id);
     const item = data.find((item) => item.id === id);
     reset(item);
+    setShowModal(true);
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Estás seguro(a) de eliminar?");
-    if (confirmDelete) {
+    const confirmResult = await Swal.fire({
+      title: "¿Estás seguro?",
+      text: "¡Esta acción no se puede deshacer!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar",
+      cancelButtonText: "Cancelar",
+    });
+
+    if (confirmResult.isConfirmed) {
       try {
         await api.delete(`${customersUrl}/${id}`);
         setData(data.filter((item) => item.id !== id));
+        Swal.fire({
+          icon: "success",
+          title: "Noticia Eliminada",
+          text: "La noticia fue eliminada correctamente.",
+        });
       } catch (error) {
-        console.log(error);
+        console.error("Error al eliminar noticia:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo eliminar la noticia.",
+        });
       }
     }
   };
 
   const handleReset = () => {
     setEditItemId(null);
+    reset();
+  };
+
+  const handleOpenModal = () => {
+    setEditItemId(null); // Se asegura de que no haya ninguna edición activa
     reset({
       newsTitle: "",
       newsContent: "",
       newsImg: "",
     });
+    setShowModal(true);
   };
 
   const onSubmit = async (formData) => {
@@ -72,43 +99,44 @@ const NewsModule = () => {
       try {
         await api.patch(`${customersUrl}/${editItemId}`, formData);
         setData(
-          data.map((item) => {
-            if (item.id === editItemId) {
-              return {
-                ...item,
-                newsTitle: formData.newsTitle,
-                newsContent: formData.newsContent,
-                newsImg: formData.newsImg,
-              };
-            } else {
-              return item;
-            }
-          })
+          data.map((item) =>
+            item.id === editItemId ? { ...item, ...formData } : item
+          )
         );
+        Swal.fire({
+          icon: "success",
+          title: "Noticia Actualizada",
+          text: "Los datos de la noticia fueron modificados correctamente.",
+        });
         setEditItemId(null);
       } catch (error) {
-        console.log(error);
+        console.error("Error al actualizar noticia:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo actualizar la noticia.",
+        });
       }
-      setShowModal(false);
     } else {
       try {
-        let newItem;
-        if (!formData.id) {
-          newItem = {
-            ...formData,
-            id: uuidv4(),
-          };
-        } else {
-          newItem = formData;
-        }
+        const newItem = { ...formData, id: uuidv4() };
         const response = await api.post(customersUrl, newItem);
-        newItem = response.data;
-        setData([...data, newItem]);
+        setData([...data, response.data]);
+        Swal.fire({
+          icon: "success",
+          title: "Noticia Creada",
+          text: "Se agregó la noticia correctamente.",
+        });
       } catch (error) {
-        console.log(error);
+        console.error("Error al crear noticia:", error);
+        Swal.fire({
+          icon: "error",
+          title: "Error",
+          text: "No se pudo crear la noticia.",
+        });
       }
-      setShowModal(false);
     }
+    setShowModal(false);
     reset();
   };
 
@@ -117,118 +145,55 @@ const NewsModule = () => {
       <NavbarAdmin />
       <div className="d-flex justify-content-center align-items-end">
         <h3 className="mt-5 text-center">Módulo Noticias</h3>
-        <button
-          className="btn btn-success ms-3"
-          onClick={() => setShowModal(true)}
-        >
+        <button className="btn btn-success ms-3" onClick={handleOpenModal}>
           <FaPlusSquare />
         </button>
       </div>
 
-      <Modal
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        dialogClassName="myModal"
-      >
+      {/* 📝 Modal para Crear/Editar */}
+      <Modal show={showModal} onHide={() => setShowModal(false)} dialogClassName="myModal">
         <Modal.Header closeButton>
-          <Modal.Title>Ingrese los datos</Modal.Title>
+          <Modal.Title>{editItemId ? "Editar Noticia" : "Agregar Noticia"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="row mt-3">
-            <div className="d-flex justify-content-center">
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <div className="col-2 m-1">
-                  <input type="hidden" {...register("id")} />
-                </div>
-
-                <div className="d-flex flex-wrap justify-content-center">
-                  <div className="col-auto m-1">
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="container">
+              <div className="row">
+                {[
+                  { name: "newsTitle", label: "Título Noticia (*)", type: "text", required: true },
+                  { name: "newsContent", label: "Contenido (*)", type: "text", required: true },
+                  { name: "newsImg", label: "Imagen Noticia (*)", type: "text", required: true },
+                ].map((field, index) => (
+                  <div key={index} className="col-md-12 mb-3">
+                    <label className="form-label">{field.label}</label>
                     <input
-                      {...register("newsTitle", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="newsTitle"
-                      type="text"
+                      {...register(field.name, field.required ? { required: `${field.label} es obligatorio` } : {})}
+                      type={field.type}
                       className="form-control"
-                      placeholder="* Titulo Noticia"
                     />
-                    {errors.newsTitle && (
-                      <p className="errorMsg">{errors.newsTitle.message}</p>
-                    )}
+                    {errors[field.name] && <p className="errorMsg">{errors[field.name].message}</p>}
                   </div>
+                ))}
+              </div>
 
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("newsContent", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="newsContent"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Contenido Noticia"
-                    />
-                    {errors.newsContent && (
-                      <p className="errorMsg">{errors.newsContent.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("newsImg", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="newsImg"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Imagen Noticia"
-                    />
-                    {errors.newsImg && (
-                      <p className="errorMsg">{errors.newsImg.message}</p>
-                    )}
-                  </div>
-                </div>
-                <div className="d-flex justify-content-center mt-3">
-                  <button className="btn btn-primary" type="submit">
+              {/* Botones en una fila separada */}
+              <div className="row">
+                <div className="col-12 text-center mt-3">
+                  <button className="btn btn-primary me-2" type="submit">
                     {editItemId ? "Guardar" : "Crear"}
                   </button>
-
-                  <button
-                    className="btn btn-danger ms-3"
-                    type="button"
-                    onClick={handleReset}
-                  >
+                  <button className="btn btn-danger" type="button" onClick={handleReset}>
                     Resetear
                   </button>
                 </div>
-              </form>
+              </div>
             </div>
-          </div>
+          </form>
         </Modal.Body>
-        <Modal.Footer></Modal.Footer>
       </Modal>
 
-      {loading ? (
-        <Loader />
-      ) : (
-        <NewsTable
-          data={data}
-          handleEdit={handleEdit}
-          handleDelete={handleDelete}
-          setShowModal={setShowModal}
-        />
-      )}
+      {/* 📋 Tabla de Noticias */}
+      {loading ? <Loader /> : <NewsTable data={data} handleEdit={handleEdit} handleDelete={handleDelete} setShowModal={setShowModal} />}
     </div>
   );
 };

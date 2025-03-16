@@ -1,9 +1,5 @@
 export const petAgeOptions = [
   {
-    label: "Elije Edad Mascota",
-    value: "",
-  },
-  {
     label: "Cachorro",
     value: "CACHORRO",
   },
@@ -19,10 +15,6 @@ export const petAgeOptions = [
 
 export const petGenderOptions = [
   {
-    label: "Elije Genero Mascota",
-    value: "",
-  },
-  {
     label: "Macho",
     value: "MACHO",
   },
@@ -34,10 +26,6 @@ export const petGenderOptions = [
 
 export const petSpeciesOptions = [
   {
-    label: "Elije Especie Mascota",
-    value: "",
-  },
-  {
     label: "Perro",
     value: "PERRO",
   },
@@ -48,10 +36,6 @@ export const petSpeciesOptions = [
 ];
 
 export const petSizeOptions = [
-  {
-    label: "Elije Tamaño Mascota",
-    value: "",
-  },
   {
     label: "Grande",
     value: "GRANDE",
@@ -68,10 +52,6 @@ export const petSizeOptions = [
 
 export const petSpecialConditionOptions = [
   {
-    label: "Elije Condicion Especial",
-    value: "",
-  },
-  {
     label: "Ninguna",
     value: "NINGUNA",
   },
@@ -87,10 +67,6 @@ export const petSpecialConditionOptions = [
 
 export const isAdoptedOptions = [
   {
-    label: "Fue Adoptado?",
-    value: "",
-  },
-  {
     label: "Si",
     value: true,
   },
@@ -101,10 +77,6 @@ export const isAdoptedOptions = [
 ];
 
 export const isFeaturedOptions = [
-  {
-    label: "Es Destacado?",
-    value: "",
-  },
   {
     label: "Si",
     value: true,

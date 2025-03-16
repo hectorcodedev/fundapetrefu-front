@@ -7,109 +7,93 @@ import { api } from "../api";
 import { Modal } from "react-bootstrap";
 import { FaPlusSquare } from "react-icons/fa";
 import { Loader } from "../../admin";
+import Swal from "sweetalert2";
 import "./shelterInfoModule.css";
 
-// const baseUrl = "http://localhost:3333";
-// const customersUrl = `${baseUrl}/shelter-contents`;
 const customersUrl = "/shelter-contents";
 
 const ShelterInfoModule = () => {
-  const {
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm({
-    defaultValues: {
-      infoTitle: "",
-      infoImgLink: "",
-      infoContent: "",
-    },
-  });
+  const { register, handleSubmit, reset, setValue, formState: { errors } } = useForm();
   const [data, setData] = useState([]);
   const [editItemId, setEditItemId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    setLoading(true);
-    api
-      .get(customersUrl)
-      .then((response) => setData(response.data))
-      .catch((error) => console.log(error))
-      .finally(() => setLoading(false));
+    fetchData();
   }, []);
+
+  const fetchData = async () => {
+    setLoading(true);
+    try {
+      const response = await api.get(customersUrl);
+      setData(response.data);
+    } catch (error) {
+      console.error("Error fetching data:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleOpenModal = () => {
+    setEditItemId(null);
+    reset();
+    setShowModal(true);
+  };
 
   const handleEdit = (id) => {
     setEditItemId(id);
     const item = data.find((item) => item.id === id);
-    reset(item);
+    Object.keys(item).forEach((key) => setValue(key, item[key]));
+    setShowModal(true);
   };
 
   const handleDelete = async (id) => {
-    const confirmDelete = window.confirm("Estás seguro(a) de eliminar?");
-    if (confirmDelete) {
-      try {
-        await api.delete(`${customersUrl}/${id}`);
-        setData(data.filter((item) => item.id !== id));
-      } catch (error) {
-        console.log(error);
+    Swal.fire({
+      title: "¿Estás seguro?",
+      text: "No podrás revertir esto!",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#d33",
+      cancelButtonColor: "#3085d6",
+      confirmButtonText: "Sí, eliminar!"
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          await api.delete(`${customersUrl}/${id}`);
+          setData(data.filter((item) => item.id !== id));
+          Swal.fire("Eliminado!", "El registro ha sido eliminado.", "success");
+        } catch (error) {
+          console.error("Error deleting item:", error);
+        }
       }
-    }
+    });
   };
 
   const handleReset = () => {
     setEditItemId(null);
-    reset({
-      infoTitle: "",
-      infoImgLink: "",
-      infoContent: "",
-    });
+    reset();
   };
 
   const onSubmit = async (formData) => {
-    if (editItemId) {
-      try {
+    try {
+      if (editItemId) {
         await api.patch(`${customersUrl}/${editItemId}`, formData);
-        setData(
-          data.map((item) => {
-            if (item.id === editItemId) {
-              return {
-                ...item,
-                infoTitle: formData.infoTitle,
-                infoImgLink: formData.infoImgLink,
-                infoContent: formData.infoContent,
-              };
-            } else {
-              return item;
-            }
-          })
-        );
-        setEditItemId(null);
-      } catch (error) {
-        console.log(error);
-      }
-      setShowModal(false);
-    } else {
-      try {
-        let newItem;
-        if (!formData.id) {
-          newItem = {
-            ...formData,
-            id: uuidv4(),
-          };
-        } else {
-          newItem = formData;
-        }
+        setData(data.map((item) => (item.id === editItemId ? { ...item, ...formData } : item)));
+        Swal.fire("Guardado!", "La información ha sido actualizada.", "success");
+      } else {
+        const newItem = { ...formData, id: uuidv4() };
         const response = await api.post(customersUrl, newItem);
-        newItem = response.data;
-        setData([...data, newItem]);
-      } catch (error) {
-        console.log(error);
+        setData([...data, response.data]);
+        Swal.fire("Creado!", "El registro ha sido añadido.", "success");
       }
       setShowModal(false);
+      reset();
+      setEditItemId(null);
+    } catch (error) {
+      console.error("Error saving data:", error);
+      Swal.fire("Error!", "Hubo un problema al guardar los datos.", "error");
     }
-    reset();
   };
 
   return (
@@ -117,118 +101,52 @@ const ShelterInfoModule = () => {
       <NavbarAdmin />
       <div className="d-flex justify-content-center align-items-end">
         <h3 className="mt-5 text-center">Módulo Nosotros</h3>
-        <button
-          className="btn btn-success ms-3"
-          onClick={() => setShowModal(true)}
-        >
+        <button className="btn btn-success ms-3" onClick={handleOpenModal}>
           <FaPlusSquare />
         </button>
       </div>
 
-      <Modal
-        show={showModal}
-        onHide={() => setShowModal(false)}
-        dialogClassName="myModal"
-      >
+      <Modal show={showModal} onHide={() => setShowModal(false)} dialogClassName="myModal">
         <Modal.Header closeButton>
-          <Modal.Title>Ingrese los datos</Modal.Title>
+          <Modal.Title>{editItemId ? "Editar Información" : "Agregar Información"}</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          <div className="row mt-3">
-            <div className="d-flex justify-content-center">
-              <form onSubmit={handleSubmit(onSubmit)}>
-                <div className="col-2 m-1">
-                  <input type="hidden" {...register("id")} />
+          <form onSubmit={handleSubmit(onSubmit)}>
+            <div className="container">
+              <div className="row">
+                {[
+                  { name: "infoTitle", label: "Título (*)", type: "text", required: true },
+                  { name: "infoImgLink", label: "Imagen (*)", type: "text", required: true },
+                  { name: "infoContent", label: "Contenido (*)", type: "text", required: true },
+                ].map((field, index) => (
+                  <div key={index} className="col-md-4 mb-3">
+                    <label className="form-label">{field.label}</label>
+                    <input
+                      {...register(field.name, field.required ? { required: `${field.label} es obligatorio` } : {})}
+                      type={field.type}
+                      className="form-control"
+                    />
+                    {errors[field.name] && <p className="errorMsg">{errors[field.name].message}</p>}
+                  </div>
+                ))}
+              </div>
+
+              <div className="row">
+                <div className="col-12 text-center mt-3">
+                  <button className="btn btn-primary me-2" type="submit">
+                    {editItemId ? "Guardar" : "Crear"}
+                  </button>
+                  <button className="btn btn-danger" type="button" onClick={handleReset}>
+                    Resetear
+                  </button>
                 </div>
-
-                <div className="d-flex flex-wrap justify-content-center">
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("infoTitle", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="infoTitle"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Título"
-                    />
-                    {errors.infoTitle && (
-                      <p className="errorMsg">{errors.infoTitle.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("infoImgLink", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="infoImgLink"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Imagen"
-                    />
-                    {errors.infoImgLink && (
-                      <p className="errorMsg">{errors.infoImgLink.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <input
-                      {...register("infoContent", {
-                        required: "Este campo es requerido",
-                        minLength: {
-                          value: 5,
-                          message: "Mínimo cinco caracteres",
-                        },
-                      })}
-                      name="infoContent"
-                      type="text"
-                      className="form-control"
-                      placeholder="* Contenido"
-                    />
-                    {errors.infoContent && (
-                      <p className="errorMsg">{errors.infoContent.message}</p>
-                    )}
-                  </div>
-
-                  <div className="col-auto m-1">
-                    <button className="btn btn-primary" type="submit">
-                      {editItemId ? "Guardar" : "Crear"}
-                    </button>
-                    <button
-                      className="btn btn-danger ms-3"
-                      type="button"
-                      onClick={handleReset}
-                    >
-                      Resetear
-                    </button>
-                  </div>
-                </div>
-              </form>
+              </div>
             </div>
-          </div>
+          </form>
         </Modal.Body>
-        <Modal.Footer></Modal.Footer>
       </Modal>
 
-      {loading ? (
-        <Loader />
-      ) : (
-        <ShelterInfoTable
-          data={data}
-          handleEdit={handleEdit}
-          handleDelete={handleDelete}
-          setShowModal={setShowModal}
-        />
-      )}
+      {loading ? <Loader /> : <ShelterInfoTable data={data} handleEdit={handleEdit} handleDelete={handleDelete} setShowModal={setShowModal} />}
     </div>
   );
 };

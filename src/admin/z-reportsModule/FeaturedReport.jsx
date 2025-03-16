@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from "react";
+import DataTable from "react-data-table-component";
 import NavbarAdmin from "../navbarAdmin/NavbarAdmin";
 import { Loader } from "../../admin";
 import { api } from "../api";
 
-// const baseUrl = "http://localhost:3333";
-// const customersUrl = `${baseUrl}/pets/featured`;
 const customersUrl = "/pets/featured";
+
+const paginationOptions = {
+  rowsPerPageText: "Registros por página:",
+  rangeSeparatorText: "de",
+  selectAllRowsItem: true,
+  selectAllRowsItemText: "Todos"
+};
 
 const FeaturedReport = () => {
   const [data, setData] = useState([]);
@@ -20,70 +26,41 @@ const FeaturedReport = () => {
       .finally(() => setLoading(false));
   }, []);
 
+  const columns = [
+    { name: "ID", selector: (row) => row.id, sortable: true },
+    { name: "Nombre", selector: (row) => row.petName, sortable: true },
+    { name: "Edad", selector: (row) => row.petAge, sortable: true },
+    { name: "Género", selector: (row) => row.petGender, sortable: true },
+    { name: "Especie", selector: (row) => row.petSpecies, sortable: true },
+    { name: "Tamaño", selector: (row) => row.petSize, sortable: true },
+    { name: "Condición Especial", selector: (row) => row.petSpecialCondition, sortable: true },
+    { name: "Adoptado?", selector: (row) => (row.isAdopted ? "Sí" : "No"), sortable: true },
+    { name: "Destacado?", selector: (row) => (row.isFeatured ? "Sí" : "No"), sortable: true },
+    { name: "Imagen Destacada", selector: (row) => row.featuredImg, sortable: false, wrap: true },
+    { name: "Descripción", selector: (row) => row.description, sortable: false, wrap: true }
+  ];
+
   return (
     <div>
       <NavbarAdmin />
       <h3 className="mt-5 text-center">Informe Mascotas Destacadas</h3>
-      <div className="row d-flex justify-content-center mt-5">
-        <div
-          className="table-responsive"
-          style={{ width: 95 + "%", fontSize: 80 + "%" }}
-        >
-          {loading ? (
-            <Loader />
-          ) : (
-            <table className="table table-hover table-bordered">
-              <thead className="table-dark">
-                <tr>
-                  <th className="text-center">Id</th>
-                  <th className="text-center">Nombre</th>
-                  <th className="text-center">Edad</th>
-                  <th className="text-center">Género</th>
-                  <th className="text-center">Especie</th>
-                  <th className="text-center">Tamaño</th>
-                  <th className="text-center">Condicion Especial</th>
-                  <th className="text-center">Adoptado?</th>
-                  <th className="text-center">Destacado?</th>
-                  <th className="text-center">Imagen Destacada</th>
-                  <th className="text-center">Descripción</th>
-                </tr>
-              </thead>
-              <tbody>
-                {data.map((item, index) => (
-                  <tr key={index}>
-                    <td
-                      style={{
-                        wordWrap: "break-word",
-                        minWidth: 150 + "px",
-                        maxWidth: 150 + "px",
-                      }}
-                    >
-                      {item.id}
-                    </td>
-                    <td>{item.petName}</td>
-                    <td>{item.petAge}</td>
-                    <td>{item.petGender}</td>
-                    <td>{item.petSpecies}</td>
-                    <td>{item.petSize}</td>
-                    <td>{item.petSpecialCondition}</td>
-                    <td>{item.isAdopted ? "si" : "no"}</td>
-                    <td>{item.isFeatured ? "si" : "no"}</td>
-                    <td
-                      style={{
-                        wordWrap: "break-word",
-                        minWidth: 150 + "px",
-                        maxWidth: 150 + "px",
-                      }}
-                    >
-                      {item.featuredImg}
-                    </td>
-                    <td>{item.description}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          )}
-        </div>
+      <div className="container mt-4">
+        {loading ? (
+          <Loader />
+        ) : (
+          <DataTable
+            columns={columns}
+            data={data}
+            pagination
+            paginationPerPage={5}
+            paginationRowsPerPageOptions={[5, 10, 15, 20]}
+            paginationComponentOptions={paginationOptions}
+            defaultSortFieldId={1}
+            highlightOnHover
+            striped
+            noDataComponent="No hay registros para mostrar"
+          />
+        )}
       </div>
     </div>
   );
